@@ -1,0 +1,370 @@
+
+
+<!--
+%\VignetteEngine{knitr::knitr}
+%\VignetteIndexEntry{Cloud-enabled cis-eQTL searches with Bioconductor GGtools 5.x}
+-->
+
+<h1>Cloud-enabled cis-eQTL searches with GGtools 4.10+</h1>
+
+* [Background](#background-sec)
+* [Objectives](#objectives-sec)
+    * [Basic reporting](#reporting-sec)
+    * [Visualization](#viz-sec)
+* [Raw materials: structuring expression, genotype, and sample data](#rawdata-sec)
+* [Cluster management with starcluster](#starcluster-sec)
+* [Programming the parallel search](#parallel-sec)
+    * [High level interface](#hilevel-sec)
+    * [Preparing to call All.cis: setup and handling of value](#exec-sec)
+* [Recovering from partial failure](#recover-sec)
+* [Working with the results](#results-sec)
+
+<h2 id="background-sec">Background</h2>
+
+```{r echo=FALSE,results="hide"}
+date()
+```
+```{r echo=FALSE,results="hide"}
+library(knitcitations)
+library(bibtex)
+allbib = read.bibtex("allbib.bib")
+library(GGtools)
+```
+
+Numerous studies have employed genome-wide measures of mRNA abundance (typically
+assayed using DNA microarrays, and more recently RNA-seq) in combination with
+high-resolution genotyping (often supplemented with statistical imputation to
+loci not directly assayed, leading to genotype calls with quantified uncertainty)
+to search for genetic determinants of variation in gene expression. 
+Key references in human applications include 
+`r citet(allbib[["Cheung:2005p446"]])`,
+`r citet(allbib[["Majewski:2011p3139"]])`, and 
+`r citet(allbib[["Gaffney:2012p5397"]])`;
+`r citet(allbib[["Shabalin:2012p4753"]])` addresses computational concerns.
+
+This document focuses on searches for eQTL <emph>in cis</emph>, so that
+DNA variants local to the gene assayed for expression are tested for association.
+
+A typical report describes tuning of the search (including, for example,
+boundaries on minor allele
+frequencies of variants to be tested, approach to correction for batch effects
+and other forms of confounding, scope of search in terms of distance from gene
+coding region), enumerates variants with evidence of association to expression
+variation in nearby genes, and then characterizes the biological roles of the
+discovered variants.
+
+<h2 id="objectives-sec">Objectives</h2>
+
+Suppose there are $N$ independently sampled individuals
+with gene expression measures on $G$ genes or probes.
+Each individual is genotyped (or has genotype statistically imputed) at $S$
+DNA locations, catalogued by NCBI dbSNP or 1000 genomes.
+We are given a $G \times N$
+matrix of expression assay results, and $N \times S$ genotyping results
+in the form of the number of B alleles (or expected number of B alleles)
+for each of the loci.  Select the search radius $\rho$ (for example, 100kb) and
+for each gene $g$, determine the search neighborhoods $N_g = N_{g,\rho} = [a_g-\rho, b_g+\rho]$,
+where $a_g$ denotes the genomic coordinate of the 5' end of the transcript region for
+gene $g$, and
+$b_g$ is the coordinate at the 3' end.  Let $|N_g|$ denote
+the number of SNP in that neighborhood.   Key objectives are
+
+- For each gene, compute the $|N_g|$ test statistics
+measuring association of SNPs in $N_g$ with mean expression of gene $g$;
+- Obtain a measure of statistical significance for each test statistic;
+- Support adjustment and assessment of sensitivity analysis of statistical
+tests (e.g., adjustment for batch effects, effects of filtering on gene expression variation
+or SNP minor allele frequency);
+- Provide the test results in a format for ready interrogation using
+various types of search key;
+- Support visualization of associations at various scales.
+
+<h3 id="reporting-sec">Basic reporting structure</h3>
+
+The code in the example for the GGtools function All.cis() yields an
+example of a sharply restricted search for cis eQTL on chr21, using
+data on the HapMap CEU population.  The result of the function inherits
+from GRanges, and includes metadata concerning its generation.
+
+```{r dolo,echo=FALSE}
+load("f1.rda")
+```
+```{r lookf1,echo=TRUE}
+length(f1)
+f1[1:3]
+metadata(f1)
+```
+Use of GRanges for the organization of association test statistics allows
+easy amalgamation of findings with other forms of genomic annotation.  Retention of
+the association scores achieved under permutation allows recomputation of
+plug-in FDR after combination or filtering.
+
+
+<h3 id="viz=sec">Visualization examples</h3>
+
+Targeted visualization of association is supported with
+the plot_EvG function in GGBase.  To obtain the
+figure on the right, the expression matrix
+has been transformed  by removing the principal components
+corresponding to the 10 largest eigenvalues.  This is a
+crude approach to reducing ``expression heterogeneity'', a main
+concern of eQTL analyses to date
+`r citep(allbib[["Leek:2007p1723"]])`.
+
+```{r demoy,fig=TRUE,fig.width=7,fig.height=4,echo=FALSE,results="hide"}
+library(yri1kgv)
+if (!exists("c20")) c20 = getSS("yri1kgv", "chr20")
+par(mfrow=c(1,2))
+plot_EvG(probeId("o67h4JQSuEa02CJJIQ"), rsid("rs2259928"), c20,
+  main="observed expr.")
+if (!exists("c20f")) c20f = clipPCs(c20, 1:10)
+plot_EvG(probeId("o67h4JQSuEa02CJJIQ"), rsid("rs2259928"), c20f,
+  main="10 expr. PC removed")
+```
+
+Above we have a single SNP-gene association.  
+The family of
+associations observed cis to ABHD12 can also be
+visualized in conjunction with the transcript models. 
+
+<img src="abhd12.png">
+
+
+<h2 id="rawdata-sec">Raw materials: structuring expression, genotype, and sample data</h2>
+
+As of November 2013, a reasonably efficient representation of expression, sample and
+genotype data is defined using an R package containing
+- an ExpressionSet instance, and
+- a folder inst/parts containing genotype data as SnpMatrix instances, as defined in the snpStats package.
+
+Elements of the sampleNames of the ExpressionSet instance must coincide with elements of the row names
+of the SnpMatrix instances.  At time of analysis, warnings will be issued and harmonization attempts will be made
+when the coincidence is not exact.
+
+The SnpMatrix instances make use of a byte code for (potentially) imputed genotypes.
+Each element of the code defines a point on the simplex displayed below, allowing
+a discrete but rich set of the key quantities of interest, the expected number of B alleles.
+```{r bag,fig=TRUE,fig.width=4,fig.height=4,echo=FALSE}
+library(snpStats)
+library(scatterplot3d)
+tmp = as.raw(1:253)
+yy = g2post(tmp)
+EB = yy %*% c(0,1,2) 
+scatterplot3d(yy[,1], yy[,3], EB, xlab="Pr(A/A)", ylab="Pr(B/B)", zlab="mean num. B")
+```
+Note that the nucleotide codes are not carried in this representation.  Typically for
+a diallelic SNP, B denotes the alphabetically later nucleotide.
+
+We can illustrate the basic operations with this overall structure, using data collected
+on Yoruban (YRI) HapMap cell
+lines.  Expression data were obtained at ArrayExpression
+E-MTAB-264 `r citep(allbib[["Stranger:2012p5427"]])`.
+
+```{r bag2}
+library(GGtools)
+library(yri1kgv)
+library(lumiHumanAll.db)
+if (!exists("y22")) y22 = getSS("yri1kgv", "chr22")
+y22
+dim(exprs(y22))
+fn = featureNames(y22)[1:5]
+library(lumi)
+id2seq(fn) # get the 50mer for each probe
+# and some annotation
+select( lumiHumanAll.db, keys=fn, keytype="PROBEID", columns=c("SYMBOL", "CHR", "ENTREZID"))
+gt22 <- smList(y22)[[1]]  # access to genotypes
+as( gt22[1:5,1:5], "character" )
+cs22 = col.summary(gt22)  # some information on genotypes
+cs22[1:10,]
+```
+<h2 id="starcluster-sec">Cluster management with starcluster</h2>
+
+This workflow is based on Amazon EC2 computation managed using the
+[MIT starcluster utilities](http://star.mit.edu/cluster/).  Configuration
+and management of EC2 based machinery is quite simple.  The complete run described here
+used configuration variables
+- CLUSTER_SIZE = 8
+- NODE_IMAGE_ID = ami-e5b89a8c
+- NODE_INSTANCE_TYPE = m2.4xlarge # 8 cores, total RAM 68.4 GB on each node
+- MASTER_INSTANCE_TYPE = m1.small
+
+<h2 id="parallel-sec">Programming the parallelized search</h2>
+
+We will describe an approach to using a cluster to
+search for eQTL.  The master process will communicate with slaves via
+sockets; slaves will write results to disk and ship back to master.
+The task is executed across chromosomes that have been split roughly
+in half.
+
+<h3 id="hilevel-sec">High level interface</h3>
+
+The AMI mentioned above includes a script defining the
+ciseqByCluster function.  Arguments to this function
+determine how the search will be configured and executed.
+The invocation here asks for a search on three chromosomes,
+dispatching work from a master R process to a 3 node cluster,
+with multicore concurrency for gene-specific searches
+on four cores per node.  The output will be GFF3
+files in the folder yrex1, subordinate to the folder where
+the master process invoked the function.
+
+```{r lkhi,eval=FALSE}
+ciseqByCluster( pack = "yri1kgv", chromsToRun=20:22, 
+   numNodes=3, ncoresPerNode=4, targetfolder="./yrex1"  )
+```
+
+The full set of arguments for ciseqByCluster is
+- pack = "yri1kgv",
+- outprefix = "yrirun",
+- chromsToRun = 1:22,  # if length is C will use 2C nodes 
+- targetfolder = "/freshdata/YRI_3",
+- radius = 100000L,
+- nperm = 3L,
+- numNodes = 8,
+- nodeNames = rep("localhost", numNodes),
+- ncoresPerNode = 8,
+- numPCtoFilter = 10,
+- lowerMAF = .02,
+- geneannopk = "lumiHumanAll.db",
+- snpannopk = "SNPlocs.Hsapiens.dbSNP.20120608",
+- smchrpref = "chr"
+
+<h3 id="psock-sec">Socket cluster generation; output preparation</h3>
+```{r setup,eval=FALSE}
+#
+# this program will split all chromsomes in roughly equal halves (by probe) and
+# compute All.cis for all probes ... snps may recur in the different halves
+#
+  if (!file.exists(targetfolder)) try(system(paste0("mkdir ", targetfolder)))
+  if (!file.exists(targetfolder)) stop(paste0("cannot  create ", targetfolder))
+  library(parallel)
+  cl <<- makePSOCKcluster(nodeNames)
+```
+<h3 id="splitgen-sec">Expression-matrix splitter</h3>
+
+```{r splitters,eval=FALSE}
+  firstHalf <<- function(x) x[1:floor(length(x))/2]
+  secondHalf <<- function(x) x[-(1:floor(length(x))/2)]
+```
+<h3 id="configgen-sec">Configuring the search</h3>
+```{r configSet,eval=FALSE}
+  setupSplit = function(nodeset=1:numNodes) {
+     clusterApply(cl, nodeset, function(w) {
+      library(parallel)  # get resources
+      library(GGtools)
+      library(pack, character.only=TRUE)
+      library(geneannopk, character.only=TRUE)
+      library(snpannopk, character.only=TRUE)
+      library(Rsamtools)
+      library(rtracklayer)
+      cc = new("CisConfig")  # configure search, except for choice of chromosome
+      smpack(cc) = pack
+      nperm(cc) = nperm
+      geneannopk(cc) = geneannopk
+      radius(cc) = radius
+      smchrpref(cc) = smchrpref
+      geneApply(cc) = mclapply  # so genes are dispatched to cores
+      options(mc.cores=ncoresPerNode)
+      cc <<- cc
+     } )
+  }
+  setupSplit(1:numNodes)  # causes library attachment on all nodes and generation of CisConfig instances there
+```
+<h3 id="exec-sec">Preparing to call All.cis: setup and handling of value</h3>
+```{r chromSpecific,eval=FALSE} 
+  runOneSplit <<- function(chrtag, suffix="A", splitter=firstHalf, gffOnly=TRUE) { # assumes cc is defined locally as the config
+    if (!exists("cc")) stop("did not find cc for local CisConfig manipulation")
+    chrnames(cc) = as.character(chrtag)
+    folderStem(cc) = paste0(folderStem(cc), "_", chrtag, suffix)
+    smFilter(cc) = function(x) {   # late filtering
+        fn = featureNames(x);
+        if (numPCtoFilter > 0) tmp = MAFfilter( clipPCs(x, 1:numPCtoFilter), lower=lowerMAF )
+        else tmp = MAFfilter( x, lower=lowerMAF )
+        tmp[probeId(splitter(fn)),]
+        }
+    obn = paste0(outprefix, "_", chrnames(cc), suffix)
+    fn = paste0(obn, ".rda")
+    res <- try(All.cis(cc))
+    if (inherits(res, "try-error")) return(res)
+
+          getmindist = function(snplocs, probes, geneannopk="lumiHumanAll.db") {
+           require(geneannopk, character.only=TRUE, quietly=TRUE)
+           stub = gsub(".db$", "", geneannopk)
+           locenv = get(paste0(stub, "CHRLOC"))
+           locendenv = get(paste0(stub, "CHRLOCEND"))
+           gloc = abs(sapply(mget(probes, locenv), "[", 1))
+           gend = abs(sapply(mget(probes, locendenv), "[", 1))
+           ifelse(
+                    snplocs <= gend & snplocs >= gloc, 0,
+                    ifelse( snplocs > gend, snplocs-gend, gloc-snplocs ) )
+          }
+    res$mindist = getmindist(res$snplocs, res$probeid, geneannopk=geneannopk)
+    assign(obn, res)
+
+    if(!gffOnly) {
+       save(list=obn, file=fn)    # save to local disk
+       system(paste0("cp ", fn, " ", targetfolder ))  # copy to target folder
+       }
+#
+#
+# define transformer
+  cr2gff = function(cr, obn, targetfolder=".") {
+      require(GenomicRanges)
+      require(Rsamtools)
+      res = as(cr, "GRanges")
+      sl = IRanges(res$snplocs, width=1)
+      ranges(res) = sl
+      names(res) = NULL
+      sn = seqnames(res)
+      sn = gsub("chr", "", sn)
+      o = order( as.numeric(sn), start(res) )
+      res = res[o]
+      gffFile = paste0(targetfolder, "/", obn, ".gff3")
+  #    seqlevels(res) = gsub("chr", "", seqlevels(res))
+      export.gff3( res, gffFile )
+ #     owd = getwd()
+ #     setwd(targetfolder)
+ #     bgzip( gffFile , overwrite=TRUE)
+ #     indexTabix( paste0(gffFile, ".gz") , format="gff")
+ #     setwd( owd )
+  }
+#
+# continue processing to tabix-indexed gff3 based on SNP address
+#
+    cr2gff( as(res, "GRanges"), obn, targetfolder )
+    NULL
+  }
+```
+<h3 id="pushc-sec">Pushing resources to cluster nodes</h3>
+```{r push2sl,eval=FALSE}
+  clusterExport(cl, "runOneSplit")
+  clusterExport(cl, "firstHalf")
+  clusterExport(cl, "secondHalf")
+```
+<h3 id="reqset-sec">Setting up job requests</h3>
+```{r makeRequest,eval=FALSE} 
+  njobs = 2*length(chromsToRun)
+  chrtags = as.character(rep(chromsToRun, each=2))
+  
+  reqlist = vector("list", njobs)
+  j <- 1
+  for (i in 1:length(chrtags)) {
+   reqlist[[j]] = list( chr=chrtags[j], tag="A", splitter=firstHalf )  # need to distinguish splitter elements
+   reqlist[[j+1]] = list( chr=chrtags[j+1], tag="B", splitter=secondHalf )  # therefore loop is complex
+   j <- j+2
+  }
+  reqlist <<- reqlist
+```
+<h3 id="dispa-sec">Load-balancing dispatch to cluster</h3>
+```{r disp2slaves,eval=FALSE}  
+  clusterApplyLB(cl, reqlist, function(x) runOneSplit(x[["chr"]], x[["tag"]], x[["splitter"]]))
+#}
+```
+
+<h2 id="results-sec">Working with the results</h2>
+
+<h2 id="bib-sec">References</h2>
+
+```{r results='asis',echo=FALSE}
+bibliography() #style="markdown")
+```
