@@ -25,10 +25,12 @@
 date()
 ```
 ```{r echo=FALSE,results="hide"}
+suppressPackageStartupMessages({
 library(knitcitations)
 library(bibtex)
 allbib = read.bibtex("allbib.bib")
 library(GGtools)
+})
 ```
 
 Numerous studies have employed genome-wide measures of mRNA abundance (typically
@@ -79,16 +81,24 @@ or SNP minor allele frequency);
 various types of search key;
 - Support visualization of associations at various scales.
 
-<h3 id="reporting-sec">Basic reporting structure</h3>
+<h3 id="reporting-sec">Basic execution/reporting structure</h3>
 
 The code in the example for the GGtools function All.cis() yields an
 example of a sharply restricted search for cis eQTL on chr21, using
-data on the HapMap CEU population.  The result of the function inherits
-from GRanges, and includes metadata concerning its generation.
+data on the HapMap CEU population.  
 
 ```{r dolo,echo=FALSE}
 load("f1.rda")
 ```
+```{r lkex,eval=FALSE}
+cc = new("CisConfig") # take a default configuration
+chrnames(cc) = "21"   # confine to chr21
+estimates(cc) = FALSE # no point estimates neede
+f1 <- All.cis( cc )   # compute the tests; can be slow without attendance
+                      # to parallelization
+```
+The result of the function inherits
+from GRanges, and includes metadata concerning its generation.
 ```{r lookf1,echo=TRUE}
 length(f1)
 f1[1:3]
@@ -132,6 +142,7 @@ visualized in conjunction with the transcript models.
 
 <h2 id="rawdata-sec">Raw materials: structuring expression, genotype, and sample data</h2>
 
+<h3 id="SnpMatrix-sec">SnpMatrix from snpStats for called and imputed genotypes</h3>
 As of November 2013, a reasonably efficient representation of expression, sample and
 genotype data is defined using an R package containing
 - an ExpressionSet instance, and
@@ -155,6 +166,7 @@ scatterplot3d(yy[,1], yy[,3], EB, xlab="Pr(A/A)", ylab="Pr(B/B)", zlab="mean num
 Note that the nucleotide codes are not carried in this representation.  Typically for
 a diallelic SNP, B denotes the alphabetically later nucleotide.
 
+<h3 id="smlSet-sec">smlSet for coordinating genotype, expression, and sample-level data</h3>
 We can illustrate the basic operations with this overall structure, using data collected
 on Yoruban (YRI) HapMap cell
 lines.  Expression data were obtained at ArrayExpression
@@ -168,10 +180,22 @@ if (!exists("y22")) y22 = getSS("yri1kgv", "chr22")
 y22
 dim(exprs(y22))
 fn = featureNames(y22)[1:5]
+```
+The annotation of expression features can be explored in several directions.
+First, the probe names themselves encode the 50mers on the chip.
+```{r getseq}
 library(lumi)
 id2seq(fn) # get the 50mer for each probe
 # and some annotation
+```
+Second, the mapping to institutionally curated gene identifiers
+is available.
+```{r getann}
 select( lumiHumanAll.db, keys=fn, keytype="PROBEID", columns=c("SYMBOL", "CHR", "ENTREZID"))
+```
+Finally, we can look at the genotype information.  This can be voluminous
+and is managed in an environment to reduce potential copying expenses.
+```{r getgen}
 gt22 <- smList(y22)[[1]]  # access to genotypes
 as( gt22[1:5,1:5], "character" )
 cs22 = col.summary(gt22)  # some information on genotypes
@@ -181,12 +205,15 @@ cs22[1:10,]
 
 This workflow is based on Amazon EC2 computation managed using the
 [MIT starcluster utilities](http://star.mit.edu/cluster/).  Configuration
-and management of EC2 based machinery is quite simple.  The complete run described here
+and management of EC2 based machinery is quite simple.  The bulk of the complete run described here
 used configuration variables
-- CLUSTER_SIZE = 8
-- NODE_IMAGE_ID = ami-e5b89a8c
-- NODE_INSTANCE_TYPE = m2.4xlarge # 8 cores, total RAM 68.4 GB on each node
-- MASTER_INSTANCE_TYPE = m1.small
+- CLUSTER_SIZE = 7
+- NODE_IMAGE_ID = ami-a32b1dca
+- NODE_INSTANCE_TYPE = c3.2xlarge # 8 cores, 15GB RAM on each
+- MASTER_INSTANCE_TYPE = c3.2xlarge
+
+For chromosome 1, a rescue run was required with a larger instance
+type (m3.2xlarge).
 
 <h2 id="parallel-sec">Programming the parallelized search</h2>
 
@@ -198,8 +225,8 @@ in half.
 
 <h3 id="hilevel-sec">High level interface</h3>
 
-The AMI mentioned above includes a script defining the
-ciseqByCluster function.  Arguments to this function
+The ciseqByCluster function of GGtools is the
+workhorse for the search.  Arguments to this function
 determine how the search will be configured and executed.
 The invocation here asks for a search on three chromosomes,
 dispatching work from a master R process to a 3 node cluster,
@@ -213,7 +240,7 @@ ciseqByCluster( pack = "yri1kgv", chromsToRun=20:22,
    numNodes=3, ncoresPerNode=4, targetfolder="./yrex1"  )
 ```
 
-The full set of arguments for ciseqByCluster is
+The full set of arguments and defaults for ciseqByCluster is
 - pack = "yri1kgv",
 - outprefix = "yrirun",
 - chromsToRun = 1:22,  # if length is C will use 2C nodes 
