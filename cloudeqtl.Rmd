@@ -18,6 +18,8 @@
     * [Preparing to call All.cis: setup and handling of value](#exec-sec)
 * [Recovering from partial failure](#recover-sec)
 * [Working with the results](#results-sec)
+    * [Visualizing results for a gene](#gviz-sec)
+    * [Statistical characteristics of search results](#stats-sec)
 
 <h2 id="background-sec">Background</h2>
 
@@ -30,6 +32,15 @@ library(knitcitations)
 library(bibtex)
 allbib = read.bibtex("allbib.bib")
 library(GGtools)
+library(yri1kgv)
+library(snpStats)
+library(scatterplot3d)
+library(lumi)
+library(parallel)
+library(doParallel)
+library(foreach)
+library(biglm)
+library(rmeta)
 })
 ```
 
@@ -205,9 +216,9 @@ cs22[1:10,]
 
 This workflow is based on Amazon EC2 computation managed using the
 [MIT starcluster utilities](http://star.mit.edu/cluster/).  Configuration
-and management of EC2 based machinery is quite simple.  The bulk of the complete run described here
+and management of EC2 based machinery is quite simple.  The bulk of the partial run described here
 used configuration variables
-- CLUSTER_SIZE = 7
+- CLUSTER_SIZE = 4
 - NODE_IMAGE_ID = ami-a32b1dca
 - NODE_INSTANCE_TYPE = c3.2xlarge # 8 cores, 15GB RAM on each
 - MASTER_INSTANCE_TYPE = c3.2xlarge
@@ -228,23 +239,42 @@ in half.
 The ciseqByCluster function of GGtools is the
 workhorse for the search.  Arguments to this function
 determine how the search will be configured and executed.
-The invocation here asks for a search on three chromosomes,
-dispatching work from a master R process to a 3 node cluster,
+The invocation here asks for a search on four chromosomes,
+dispatching work from a master R process to a four node cluster,
 with multicore concurrency for gene-specific searches
-on four cores per node.  The output will be GFF3
-files in the folder yrex1, subordinate to the folder where
-the master process invoked the function.
+on eight cores per node.  Three output files are
+generated in the folder identified as targetfolder:
+- an RDA file serializing a data.table instance with a record for
+each SNP-probe pair satisfying the cis proximity criterion
+- a tabix-indexed GFF3 file with the same information as
+the data.table
+- the tabix .tbi file for the GFF3 
 
-```{r lkhi,eval=FALSE}
-ciseqByCluster( pack = "yri1kgv", chromsToRun=20:22, 
-   numNodes=3, ncoresPerNode=4, targetfolder="./yrex1"  )
+The following script is available on the AMI noted above
+and will generate the partceu100k_dt data.table instance
+used for analysis below.
+```{r showscript,eval=FALSE}
+library(parallel)
+newcl = makePSOCKcluster(c("master", paste0("node00", 1:3)))
+library(foreach)
+library(doParallel)
+registerDoParallel(cores=8)  # may want to keep at 5
+
+library(GGtools)
+ceuDemoRecov = try(ciseqByCluster( newcl, 
+   chromsToRun=19:22, finaltag="partceu100k",
+   outprefix="ceurun",
+   ncoresPerNode=8, targetfolder="/freshdata/CEU_DEMO"  ))
+save(ceuDemoRecov, file="ceuDemoRecov.rda")
+stopCluster(newcl)
+stopImplicitCluster()
+sessionInfo()
 ```
-
 The full set of arguments and defaults for ciseqByCluster is
 - pack = "yri1kgv",
 - outprefix = "yrirun",
-- chromsToRun = 1:22,  # if length is C will use 2C nodes 
-- targetfolder = "/freshdata/YRI_3",
+- chromsToRun = 1:22,  # if length is C will use 3C nodes 
+- targetfolder = "/freshdata/YRI_3",  # for demo, a volume reference
 - radius = 100000L,
 - nperm = 3L,
 - numNodes = 8,
@@ -256,142 +286,95 @@ The full set of arguments and defaults for ciseqByCluster is
 - snpannopk = "SNPlocs.Hsapiens.dbSNP.20120608",
 - smchrpref = "chr"
 
-<h3 id="psock-sec">Socket cluster generation; output preparation</h3>
-```{r setup,eval=FALSE}
-#
-# this program will split all chromsomes in roughly equal halves (by probe) and
-# compute All.cis for all probes ... snps may recur in the different halves
-#
-  if (!file.exists(targetfolder)) try(system(paste0("mkdir ", targetfolder)))
-  if (!file.exists(targetfolder)) stop(paste0("cannot  create ", targetfolder))
-  library(parallel)
-  cl <<- makePSOCKcluster(nodeNames)
-```
-<h3 id="splitgen-sec">Expression-matrix splitter</h3>
-
-```{r splitters,eval=FALSE}
-  firstHalf <<- function(x) x[1:floor(length(x))/2]
-  secondHalf <<- function(x) x[-(1:floor(length(x))/2)]
-```
-<h3 id="configgen-sec">Configuring the search</h3>
-```{r configSet,eval=FALSE}
-  setupSplit = function(nodeset=1:numNodes) {
-     clusterApply(cl, nodeset, function(w) {
-      library(parallel)  # get resources
-      library(GGtools)
-      library(pack, character.only=TRUE)
-      library(geneannopk, character.only=TRUE)
-      library(snpannopk, character.only=TRUE)
-      library(Rsamtools)
-      library(rtracklayer)
-      cc = new("CisConfig")  # configure search, except for choice of chromosome
-      smpack(cc) = pack
-      nperm(cc) = nperm
-      geneannopk(cc) = geneannopk
-      radius(cc) = radius
-      smchrpref(cc) = smchrpref
-      geneApply(cc) = mclapply  # so genes are dispatched to cores
-      options(mc.cores=ncoresPerNode)
-      cc <<- cc
-     } )
-  }
-  setupSplit(1:numNodes)  # causes library attachment on all nodes and generation of CisConfig instances there
-```
-<h3 id="exec-sec">Preparing to call All.cis: setup and handling of value</h3>
-```{r chromSpecific,eval=FALSE} 
-  runOneSplit <<- function(chrtag, suffix="A", splitter=firstHalf, gffOnly=TRUE) { # assumes cc is defined locally as the config
-    if (!exists("cc")) stop("did not find cc for local CisConfig manipulation")
-    chrnames(cc) = as.character(chrtag)
-    folderStem(cc) = paste0(folderStem(cc), "_", chrtag, suffix)
-    smFilter(cc) = function(x) {   # late filtering
-        fn = featureNames(x);
-        if (numPCtoFilter > 0) tmp = MAFfilter( clipPCs(x, 1:numPCtoFilter), lower=lowerMAF )
-        else tmp = MAFfilter( x, lower=lowerMAF )
-        tmp[probeId(splitter(fn)),]
-        }
-    obn = paste0(outprefix, "_", chrnames(cc), suffix)
-    fn = paste0(obn, ".rda")
-    res <- try(All.cis(cc))
-    if (inherits(res, "try-error")) return(res)
-
-          getmindist = function(snplocs, probes, geneannopk="lumiHumanAll.db") {
-           require(geneannopk, character.only=TRUE, quietly=TRUE)
-           stub = gsub(".db$", "", geneannopk)
-           locenv = get(paste0(stub, "CHRLOC"))
-           locendenv = get(paste0(stub, "CHRLOCEND"))
-           gloc = abs(sapply(mget(probes, locenv), "[", 1))
-           gend = abs(sapply(mget(probes, locendenv), "[", 1))
-           ifelse(
-                    snplocs <= gend & snplocs >= gloc, 0,
-                    ifelse( snplocs > gend, snplocs-gend, gloc-snplocs ) )
-          }
-    res$mindist = getmindist(res$snplocs, res$probeid, geneannopk=geneannopk)
-    assign(obn, res)
-
-    if(!gffOnly) {
-       save(list=obn, file=fn)    # save to local disk
-       system(paste0("cp ", fn, " ", targetfolder ))  # copy to target folder
-       }
-#
-#
-# define transformer
-  cr2gff = function(cr, obn, targetfolder=".") {
-      require(GenomicRanges)
-      require(Rsamtools)
-      res = as(cr, "GRanges")
-      sl = IRanges(res$snplocs, width=1)
-      ranges(res) = sl
-      names(res) = NULL
-      sn = seqnames(res)
-      sn = gsub("chr", "", sn)
-      o = order( as.numeric(sn), start(res) )
-      res = res[o]
-      gffFile = paste0(targetfolder, "/", obn, ".gff3")
-  #    seqlevels(res) = gsub("chr", "", seqlevels(res))
-      export.gff3( res, gffFile )
- #     owd = getwd()
- #     setwd(targetfolder)
- #     bgzip( gffFile , overwrite=TRUE)
- #     indexTabix( paste0(gffFile, ".gz") , format="gff")
- #     setwd( owd )
-  }
-#
-# continue processing to tabix-indexed gff3 based on SNP address
-#
-    cr2gff( as(res, "GRanges"), obn, targetfolder )
-    NULL
-  }
-```
-<h3 id="pushc-sec">Pushing resources to cluster nodes</h3>
-```{r push2sl,eval=FALSE}
-  clusterExport(cl, "runOneSplit")
-  clusterExport(cl, "firstHalf")
-  clusterExport(cl, "secondHalf")
-```
-<h3 id="reqset-sec">Setting up job requests</h3>
-```{r makeRequest,eval=FALSE} 
-  njobs = 2*length(chromsToRun)
-  chrtags = as.character(rep(chromsToRun, each=2))
-  
-  reqlist = vector("list", njobs)
-  j <- 1
-  for (i in 1:length(chrtags)) {
-   reqlist[[j]] = list( chr=chrtags[j], tag="A", splitter=firstHalf )  # need to distinguish splitter elements
-   reqlist[[j+1]] = list( chr=chrtags[j+1], tag="B", splitter=secondHalf )  # therefore loop is complex
-   j <- j+2
-  }
-  reqlist <<- reqlist
-```
-<h3 id="dispa-sec">Load-balancing dispatch to cluster</h3>
-```{r disp2slaves,eval=FALSE}  
-  clusterApplyLB(cl, reqlist, function(x) runOneSplit(x[["chr"]], x[["tag"]], x[["splitter"]]))
-#}
-```
-
 <h2 id="results-sec">Working with the results</h2>
+The GFF3 file is useful for targeted queries, potentially from
+external applications.  The primary difficulty with using this 
+in R is the need to parse the optional data subfields of field 9.
+
+<h3 id="gviz-sec">Visualizing results for a gene</h2>
+We will focus on the data.table output.  A basic objective
+is targeted visualization.  The scoresCis function
+helps with this.  We load the data.table instance first.
+```{r coded,eval=FALSE}
+library(data.table)
+load("partceu100k_dt.rda")
+scoresCis("CPNE1", partceu100k_dt)
+```
+```{r demomod,fig=TRUE,fig.width=7,fig.height=4,echo=FALSE,results="hide"}
+library(data.table)
+load("partceu100k_dt.rda")
+suppressPackageStartupMessages(scoresCis("CPNE1", partceu100k_dt))
+```
+
+<h3 id="stats-sec">Statistical characteristics of search results</h2>
+
+In this section we consider how
+structural and genetic information
+can be used to distinguish conditional probabilities
+of SNP genotypes being associated with phenotypic variation.
+We use some additional data
+provided in the GGtools package concerning
+a) chromatin state of the lymphoblastoid cell line GM12878,
+a line similar to those form which expression data were generated,
+and b) identities of SNP that have been found to be hits
+(or are in LD with hits at $R^2 > 80\%$)
+in the NHGRI GWAS catalog.  See man pages for hmm878 in GGtools package
+and gwastagger in gwascat package for more information.  These
+data are automatically propagated to ciseqByCluster data.table output.
+
+Our approach is to use logistic regression on 1.5 million
+records.  We use the biglm package to keep memory images modest.
+
+We discretize some of the key factors.
+```{r disc}
+load("partceu100k_dt.rda")
+distcat = cut(partceu100k_dt$mindist,c(-1, 1, 1000, 5000, 10000, 50000, 100001))
+fdrcat = cut(partceu100k_dt$fdr,c(-.01,.005, .05, .1, .2, 1.01))
+fdrcat = relevel(fdrcat, "(0.2,1.01]")
+mafcat = cut(partceu100k_dt$MAF,c(0,.05, .1, .2, .3, .51))
+approm = 1*partceu100k_dt$chromcat878 %in% c("1_Active_Promoter", "3_Poised_Promoter")
+```
+
+Now we rebuild the data.table and fit the model to a randomly
+selected training set of about half the total number of records.
+```{r fit}
+partceu100k_dt = cbind(partceu100k_dt, distcat, fdrcat, mafcat, approm)
+set.seed(1234)
+train = sample(1:nrow(partceu100k_dt), 
+   size=floor(nrow(partceu100k_dt)/2), replace=FALSE)
+library(biglm)
+b1 = bigglm(isgwashit~distcat+fdrcat+mafcat+approm, fam=binomial(),
+ data=partceu100k_dt[train,], maxit=30)
+```
+A source of figures of merit is the calibration of predictions
+against actual hit events in the test set.
+```{r cali}
+pp = predict(b1, newdata=partceu100k_dt[-train,], type="response")
+summary(pp)
+cpp = cut(pp, c(0,.025, .05, .12, 21))
+table(cpp)
+sapply(split(partceu100k_dt$isgwashit[-train], cpp), mean)
+```
+It seems that the model, fit using data on a small number of chromosomes,
+has some predictive utility.  We can visualize the coefficients:
+```{r demomodco,fig=TRUE,fig.width=7,fig.height=4}
+tmat = matrix(rownames(summary(b1)$mat),nc=1)
+est = summary(b1)$mat[,1]
+library(rmeta)
+forestplot(tmat, est, est-.01, est+.01, xlog=TRUE,
+  boxsize=.35, graphwidth=unit(3, "inches"),
+  xticks=exp(seq(-4,2,2)))
+```
+Standard errors in the presence of correlations among responses
+require further methods development.
+
 
 <h2 id="bib-sec">References</h2>
 
 ```{r results='asis',echo=FALSE}
 bibliography() #style="markdown")
+```
+
+```{r sess}
+sessionInfo()
 ```
