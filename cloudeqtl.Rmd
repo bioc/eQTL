@@ -26,6 +26,7 @@
 date()
 ```
 ```{r echo=FALSE,results="hide"}
+scoresCis = function(...){NULL}  # does commented unevald code get checked?
 suppressPackageStartupMessages({
 library(knitcitations)
 library(bibtex)
