@@ -367,7 +367,7 @@ forestplot(tmat, est, est-.01, est+.01, xlog=TRUE,
   xticks=exp(seq(-4,2,2)))
 ```
 Standard errors in the presence of correlations among responses
-require further methods development.
+require further methodological development.
 
 
 <h2 id="bib-sec">References</h2>
