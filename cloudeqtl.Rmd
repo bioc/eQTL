@@ -290,6 +290,10 @@ external applications.  The primary difficulty with using this
 in R is the need to parse the optional data subfields of field 9.
 
 <h3 id="gviz-sec">Visualizing results for a gene</h2>
+
+As of 1/20/2014 the call to scoresCis() can only be executed with
+R-devel and GGtools 4.11.28+.
+
 We will focus on the data.table output.  A basic objective
 is targeted visualization.  The scoresCis function
 helps with this.  We load the data.table instance first.
@@ -298,11 +302,14 @@ library(data.table)
 load("partceu100k_dt.rda")
 scoresCis("CPNE1", partceu100k_dt)
 ```
-```{r demomod,fig=TRUE,fig.width=7,fig.height=4,echo=FALSE,results="hide"}
-library(data.table)
-load("partceu100k_dt.rda")
-suppressPackageStartupMessages(scoresCis("CPNE1", partceu100k_dt))
-```
+<!--  ```{r demomod,fig=TRUE,fig.width=7,fig.height=4,echo=FALSE,results="hide"} -->
+<!--
+#library(data.table)
+#load("partceu100k_dt.rda")
+#suppressPackageStartupMessages(scoresCis("CPNE1", partceu100k_dt))
+   ```
+-->
+<img src="demomod.png">
 
 <h3 id="stats-sec">Statistical characteristics of search results</h2>
 
