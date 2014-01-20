@@ -16,7 +16,6 @@
 * [Programming the parallel search](#parallel-sec)
     * [High level interface](#hilevel-sec)
     * [Preparing to call All.cis: setup and handling of value](#exec-sec)
-* [Recovering from partial failure](#recover-sec)
 * [Working with the results](#results-sec)
     * [Visualizing results for a gene](#gviz-sec)
     * [Statistical characteristics of search results](#stats-sec)
