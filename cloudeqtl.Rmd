@@ -223,7 +223,7 @@ used configuration variables
 - NODE_INSTANCE_TYPE = c3.2xlarge # 8 cores, 15GB RAM on each
 - MASTER_INSTANCE_TYPE = c3.2xlarge
 
-For chromosome 1, a rescue run was required with a larger instance
+In a complete run, for chromosome 1, a rescue run was required with a larger instance
 type (m3.2xlarge).
 
 <h2 id="parallel-sec">Programming the parallelized search</h2>
@@ -325,7 +325,10 @@ data are automatically propagated to ciseqByCluster data.table output.
 Our approach is to use logistic regression on 1.5 million
 records.  We use the biglm package to keep memory images modest.
 
-We discretize some of the key factors.
+We discretize some of the key factors, and form an indicator
+variable for the event that the SNP is in
+a region of active or poised promoter chromatin state, as
+determined by ChromHMM on GM12878.
 ```{r disc}
 load("partceu100k_dt.rda")
 distcat = cut(partceu100k_dt$mindist,c(-1, 1, 1000, 5000, 10000, 50000, 100001))
@@ -351,7 +354,7 @@ against actual hit events in the test set.
 ```{r cali}
 pp = predict(b1, newdata=partceu100k_dt[-train,], type="response")
 summary(pp)
-cpp = cut(pp, c(0,.025, .05, .12, 21))
+cpp = cut(pp, c(0,.025, .05, .12, .21))
 table(cpp)
 sapply(split(partceu100k_dt$isgwashit[-train], cpp), mean)
 ```
