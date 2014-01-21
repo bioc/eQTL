@@ -308,13 +308,13 @@ library(data.table)
 load("partceu100k_dt.rda")
 scoresCis("CPNE1", partceu100k_dt)
 ```
-<!--  ```{r demomod,fig=TRUE,fig.width=7,fig.height=4,echo=FALSE,results="hide"} -->
-<!--
-#library(data.table)
-#load("partceu100k_dt.rda")
-#suppressPackageStartupMessages(scoresCis("CPNE1", partceu100k_dt))
-   ```
--->
+[//]: <!--  ```{r demomod,fig=TRUE,fig.width=7,fig.height=4,echo=FALSE,results="hide"} -->
+[//]: <!--
+[//]: #library(data.table)
+[//]: #load("partceu100k_dt.rda")
+[//]: #suppressPackageStartupMessages(scoresCis("CPNE1", partceu100k_dt))
+[//]:    ```
+[//]: -->
 <img src="demomod.png">
 
 <h3 id="stats-sec">Statistical characteristics of search results</h2>
