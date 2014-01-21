@@ -1,6 +1,4 @@
-<script type="text/javascript"
-  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
-</script>
+
 
 <!--
 %\VignetteEngine{knitr::knitr}
@@ -76,7 +74,7 @@ DNA locations, catalogued by NCBI dbSNP or 1000 genomes.
 We are given a \\(G \times N\\)
 matrix of expression assay results, and \\(N \times S\\) genotyping results
 in the form of the number of B alleles (or expected number of B alleles)
-for each of the loci.  Select the search radius \\(\rho\\) (for example, 100kb) and
+for each of the loci.  Select the search radius &rho \\(\rho\\) (for example, 100kb) and
 for each gene \\(g\\), determine the search neighborhoods \\(N_g = N_{g,\rho} = [a_g-\rho, b_g+\rho]\\),
 where \\(a_g\\) denotes the genomic coordinate of the 5' end of the transcript region for
 gene \\(g\\), and
