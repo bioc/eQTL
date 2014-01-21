@@ -1,4 +1,6 @@
-
+<script type="text/javascript"
+  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
 
 <!--
 %\VignetteEngine{knitr::knitr}
@@ -67,22 +69,22 @@ discovered variants.
 
 <h2 id="objectives-sec">Objectives</h2>
 
-Suppose there are $N$ independently sampled individuals
-with gene expression measures on $G$ genes or probes.
-Each individual is genotyped (or has genotype statistically imputed) at $S$
+Suppose there are \\(N\\) independently sampled individuals
+with gene expression measures on \\(G\\) genes or probes.
+Each individual is genotyped (or has genotype statistically imputed) at \\(S\\)
 DNA locations, catalogued by NCBI dbSNP or 1000 genomes.
-We are given a $G \times N$
-matrix of expression assay results, and $N \times S$ genotyping results
+We are given a \\(G \times N\\)
+matrix of expression assay results, and \\(N \times S\\) genotyping results
 in the form of the number of B alleles (or expected number of B alleles)
-for each of the loci.  Select the search radius $\rho$ (for example, 100kb) and
-for each gene $g$, determine the search neighborhoods $N_g = N_{g,\rho} = [a_g-\rho, b_g+\rho]$,
-where $a_g$ denotes the genomic coordinate of the 5' end of the transcript region for
-gene $g$, and
-$b_g$ is the coordinate at the 3' end.  Let $|N_g|$ denote
+for each of the loci.  Select the search radius \\(\rho\\) (for example, 100kb) and
+for each gene \\(g\\), determine the search neighborhoods \\(N_g = N_{g,\rho} = [a_g-\rho, b_g+\rho]\\),
+where \\(a_g\\) denotes the genomic coordinate of the 5' end of the transcript region for
+gene \\(g\\), and
+\\(b_g\\) is the coordinate at the 3' end.  Let \\(|N_g|\\) denote
 the number of SNP in that neighborhood.   Key objectives are
 
-- For each gene, compute the $|N_g|$ test statistics
-measuring association of SNPs in $N_g$ with mean expression of gene $g$;
+- For each gene, compute the \\(|N_g|\\) test statistics
+measuring association of SNPs in \\(N_g\\) with mean expression of gene \\(g\\);
 - Obtain a measure of statistical significance for each test statistic;
 - Support adjustment and assessment of sensitivity analysis of statistical
 tests (e.g., adjustment for batch effects, effects of filtering on gene expression variation
@@ -323,7 +325,7 @@ provided in the GGtools package concerning
 a) chromatin state of the lymphoblastoid cell line GM12878,
 a line similar to those form which expression data were generated,
 and b) identities of SNP that have been found to be hits
-(or are in LD with hits at $R^2 > 80\%$)
+(or are in LD with hits at \\(R^2 > 80\%\\))
 in the NHGRI GWAS catalog.  See man pages for hmm878 in GGtools package
 and gwastagger in gwascat package for more information.  These
 data are automatically propagated to ciseqByCluster data.table output.
