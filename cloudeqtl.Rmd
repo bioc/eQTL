@@ -44,6 +44,7 @@ library(parallel)
 library(foreach)
 library(biglm)
 library(rmeta)
+library(Cairo)
 })
 ```
 
