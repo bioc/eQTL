@@ -17,9 +17,7 @@
     * [Visualization](#viz-sec)
 * [Raw materials: structuring expression, genotype, and sample data](#rawdata-sec)
 * [Cluster management with starcluster](#starcluster-sec)
-* [Programming the parallel search](#parallel-sec)
-    * [High level interface](#hilevel-sec)
-    * [Preparing to call All.cis: setup and handling of value](#exec-sec)
+* [Programming the parallel search: ciseqByCluster](#parallel-sec)
 * [Working with the results](#results-sec)
     * [Visualizing results for a gene](#gviz-sec)
     * [Statistical characteristics of search results](#stats-sec)
@@ -230,15 +228,13 @@ used configuration variables
 In a complete run, for chromosome 1, a rescue run was required with a larger instance
 type (m3.2xlarge).
 
-<h2 id="parallel-sec">Programming the parallelized search</h2>
+<h2 id="parallel-sec">Programming the parallelized search: ciseqByCluster</h2>
 
 We will describe an approach to using a cluster to
 search for eQTL.  The master process will communicate with slaves via
 sockets; slaves will write results to disk and ship back to master.
 The task is executed across chromosomes that have been split roughly
 in half.
-
-<h3 id="hilevel-sec">High level interface</h3>
 
 The ciseqByCluster function of GGtools is the
 workhorse for the search.  Arguments to this function
