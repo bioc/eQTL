@@ -158,6 +158,7 @@ visualized in conjunction with the transcript models.
 <h3 id="SnpMatrix-sec">SnpMatrix from snpStats for called and imputed genotypes</h3>
 As of November 2013, a reasonably efficient representation of expression, sample and
 genotype data is defined using an R package containing
+
 - an ExpressionSet instance, and
 - a folder inst/parts containing genotype data as SnpMatrix instances, as defined in the snpStats package.
 
@@ -245,6 +246,7 @@ dispatching work from a master R process to a four node cluster,
 with multicore concurrency for gene-specific searches
 on eight cores per node.  Three output files are
 generated in the folder identified as targetfolder:
+
 - an RDA file serializing a data.table instance with a record for
 each SNP-probe pair satisfying the cis proximity criterion
 - a tabix-indexed GFF3 file with the same information as
@@ -272,20 +274,21 @@ stopImplicitCluster()
 sessionInfo()
 ```
 The full set of arguments and defaults for ciseqByCluster is
-- pack = "yri1kgv",
-- outprefix = "yrirun",
-- chromsToRun = 1:22,  # if length is C will use 3C nodes 
-- targetfolder = "/freshdata/YRI_3",  # for demo, a volume reference
-- radius = 100000L,
-- nperm = 3L,
-- numNodes = 8,
-- nodeNames = rep("localhost", numNodes),
-- ncoresPerNode = 8,
-- numPCtoFilter = 10,
-- lowerMAF = .02,
-- geneannopk = "lumiHumanAll.db",
-- snpannopk = "SNPlocs.Hsapiens.dbSNP.20120608",
-- smchrpref = "chr"
+
+-   pack = "yri1kgv",
+-   outprefix = "yrirun",
+-   chromsToRun = 1:22,  # if length is C will use 3C nodes 
+-   targetfolder = "/freshdata/YRI_3",  # for demo, a volume reference
+-   radius = 100000L,
+-   nperm = 3L,
+-   numNodes = 8,
+-   nodeNames = rep("localhost", numNodes),
+-   ncoresPerNode = 8,
+-   numPCtoFilter = 10,
+-   lowerMAF = .02,
+-   geneannopk = "lumiHumanAll.db",
+-   snpannopk = "SNPlocs.Hsapiens.dbSNP.20120608",
+-   smchrpref = "chr"
 
 <h2 id="results-sec">Working with the results</h2>
 The GFF3 file is useful for targeted queries, potentially from
