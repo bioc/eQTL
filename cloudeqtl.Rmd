@@ -22,14 +22,13 @@
     * [Visualizing results for a gene](#gviz-sec)
     * [Statistical characteristics of search results](#stats-sec)
 
-<h2 id="background-sec">Background</h2>
 
 ```{r echo=FALSE,results="hide"}
 date()
 ```
 ```{r echo=FALSE,results="hide"}
 scoresCis = function(...){NULL}  # does commented unevald code get checked?
-suppressPackageStartupMessages({
+suppressMessages({  # include some warnings on symbol replacements
 library(knitcitations)
 library(bibtex)
 allbib = read.bibtex("allbib.bib")
@@ -45,6 +44,8 @@ library(rmeta)
 library(Cairo)
 })
 ```
+
+<h2 id="background-sec">Background</h2>
 
 Numerous studies have employed genome-wide measures of mRNA abundance (typically
 assayed using DNA microarrays, and more recently RNA-seq) in combination with
