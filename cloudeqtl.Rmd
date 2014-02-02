@@ -136,6 +136,7 @@ concern of eQTL analyses to date
 `r citep(allbib[["Leek:2007p1723"]])`.
 
 ```{r demoy,fig=TRUE,fig.width=7,fig.height=4,echo=FALSE,results="hide"}
+suppressMessages({
 library(yri1kgv)
 if (!exists("c20")) c20 = getSS("yri1kgv", "chr20")
 par(mfrow=c(1,2))
@@ -144,6 +145,10 @@ plot_EvG(probeId("o67h4JQSuEa02CJJIQ"), rsid("rs2259928"), c20,
 if (!exists("c20f")) c20f = clipPCs(c20, 1:10)
 plot_EvG(probeId("o67h4JQSuEa02CJJIQ"), rsid("rs2259928"), c20f,
   main="10 expr. PC removed")
+})
+```
+```{r shoit,eval=FALSE}
+plot_EvG(probeId("o67h4JQSuEa02CJJIQ"), rsid("rs2259928"), c20f,
 ```
 
 Above we have a single SNP-gene association.  
