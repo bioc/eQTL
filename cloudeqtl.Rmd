@@ -3,7 +3,6 @@
 </script>
 
 
-
 <!--
 %\VignetteEngine{knitr::knitr}
 %\VignetteIndexEntry{Cloud-enabled cis-eQTL searches with Bioconductor GGtools 5.x}
