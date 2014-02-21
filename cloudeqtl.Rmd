@@ -149,6 +149,7 @@ plot_EvG(probeId("o67h4JQSuEa02CJJIQ"), rsid("rs2259928"), c20f,
 ```
 ```{r shoit,eval=FALSE}
 plot_EvG(probeId("o67h4JQSuEa02CJJIQ"), rsid("rs2259928"), c20f,
+  main="10 expr. PC removed")
 ```
 
 Above we have a single SNP-gene association.  
