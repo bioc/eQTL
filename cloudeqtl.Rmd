@@ -16,9 +16,12 @@
     * [Visualization](#viz-sec)
 * [Raw materials: structuring expression, genotype, and sample data](#rawdata-sec)
 * [Cluster management with starcluster](#starcluster-sec)
-* [Programming the parallel search: ciseqByCluster](#parallel-sec)
+* [Programming the parallel search: various strategies](#parallel-sec)
+    * [High-level, socket-based cluster: ciseqByCluster](#hilev-sec)
+    * [BatchJobs-based approach](#batj-sec)
 * [Working with the results](#results-sec)
     * [Overview QQ-plot](#ovplot-sec)
+    * [Sensitivity analysis of tuning the search](#sens-sec)
     * [Visualizing results for a gene](#gviz-sec)
     * [Statistical characteristics of search results](#stats-sec)
 
@@ -237,13 +240,15 @@ used configuration variables
 In a complete run, for chromosome 1, a rescue run was required with a larger instance
 type (m3.2xlarge).
 
-<h2 id="parallel-sec">Programming the parallelized search: ciseqByCluster</h2>
+<h2 id="parallel-sec">Programming the parallelized search: various approaches</h2>
 
-We will describe an approach to using a cluster to
-search for eQTL.  The master process will communicate with slaves via
+<h3 id="hilev-sec"> High-level, socket-based cluster: ciseqByCluster </h3>
+We will describe an essentially monolithic approach to using a cluster to
+search for eQTL in which evaluation of a single R function
+drives the search.  The master process will communicate with slaves via
 sockets; slaves will write results to disk and ship back to master.
 The task is executed across chromosomes that have been split roughly
-in half.
+in thirds to reduce RAM consumption.
 
 The ciseqByCluster function of GGtools is the
 workhorse for the search.  Arguments to this function
@@ -321,7 +326,39 @@ This gives an indication that the distribution
 of the vast majority of observed SNP-gene
 pair association statistics is consistent with the null model.
 
-<h3 id="gviz-sec">Visualizing results for a gene</h2>
+<h3 id="sens-sec">Sensitivity analysis of tuning the search</h3>
+
+Because our data.table output retains information on association scores
+achieved after permuting expression against genotype, we can recompute
+plug-in FDRs for loci that remain after filtering 
+the full set of records in various
+ways.  The eqsens_dt function allows exploration of
+sensitivity of eQTL enumerations across various dimensions,
+and users can add additional dimension through suitable
+programming.  The default behavior is illustrated first:
+```{r dosens,fig=TRUE}
+library(foreach)  # basic function includes a %dopar%
+library(doParallel)
+library(parallel)
+dcdown = max(c(detectCores()-1,1))
+registerDoParallel(cores=min(c(dcdown,5)))
+eq1 = eqsens_dt(partceu100k_dt)
+plotsens(eq1)
+```
+
+The arguments to eqsens_dt are
+```{r lkar}
+args(eqsens_dt)
+```
+and setting components of the parmslist argument governs
+the set of tuning parameter vectors that will be used.
+Exploration of additional dimensions would involve passing
+a different function for the filtgen parameter; filtgen.maf.dist
+assumes a 2-vector of (MAF, dist) will be used to retain rows
+with MAF exceeding the input MAF, and dist no greater than the
+input mindist from SNP to gene.
+
+<h3 id="gviz-sec">Visualizing results for a gene</h3>
 
 As of 1/20/2014 the call to scoresCis() can only be executed with
 R-devel and GGtools 4.11.28+.
