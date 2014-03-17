@@ -45,6 +45,7 @@ library(foreach)
 library(biglm)
 library(rmeta)
 library(Cairo)
+load("partceu100k_dt.rda")
 })
 ```
 
