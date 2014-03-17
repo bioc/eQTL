@@ -435,7 +435,8 @@ library(foreach)  # basic function includes a %dopar%
 library(doParallel)
 library(parallel)
 dcdown = max(c(detectCores()-1,1))
-registerDoParallel(cores=min(c(dcdown,5)))
+cl = makeForkCluster(dcdown)
+registerDoParallel(cl, cores=1) # nesting?
 eq1 = eqsens_dt(partceu100k_dt)
 plotsens(eq1)
 ```
