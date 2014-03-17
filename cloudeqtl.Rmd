@@ -337,6 +337,38 @@ sensitivity of eQTL enumerations across various dimensions,
 and users can add additional dimension through suitable
 programming.  The default behavior is illustrated first:
 ```{r co,echo=FALSE}
+update_fdr_filt = function (tab, filt = function(x) x, by = c("pairs", "snps", 
+    "probes")[1]) {
+    require(GGtools, quietly = TRUE)
+    tab = filt(tab)
+    psinds = grep("permScore", colnames(tab), value = TRUE)
+    nr = nrow(tab)
+    pscores = vector("numeric", nr * length(psinds))
+    for (np in 1:length(psinds)) pscores[(((np - 1) * nr) + 1):(np * 
+        nr)] = tab[[psinds[np]]]
+    if (by == "pairs") {
+        newfd = pifdr(tab$score, pscores)
+    }
+    else {
+        if (by == "snps") 
+            byvar = "snp"
+        else if (by == "probes") 
+            byvar = "probeid"
+        base = tab[, max(score), by = byvar]
+        maxbysnp = base$V1
+        ol = list()
+        pnames = grep("permScore", names(tab))
+        for (i in 1:length(pnames)) {
+            tab$score = tab[, pnames[i], with = FALSE]
+            ol[[i]] = tab[, max(score), by = byvar]$V1
+        }
+        newfd = pifdr(maxbysnp, as.numeric(unlist(ol)))
+        tab = base
+    }
+    tab$fdr = newfd
+    tab
+}
+
 #
 # defining here so that release version can be used
 #
