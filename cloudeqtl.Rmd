@@ -429,6 +429,7 @@ plotsens = function (eqsout, ylab = "count of eQTL at given FDR",
 ```
 
 ```{r dosens,fig=TRUE}
+load("partceu100k_dt.rda")
 library(foreach)  # basic function includes a %dopar%
 library(doParallel)
 library(parallel)
@@ -491,7 +492,6 @@ variable for the event that the SNP is in
 a region of active or poised promoter chromatin state, as
 determined by ChromHMM on GM12878.
 ```{r disc}
-load("partceu100k_dt.rda")
 distcat = cut(partceu100k_dt$mindist,c(-1, 1, 1000, 5000, 10000, 50000, 100001))
 fdrcat = cut(partceu100k_dt$fdr,c(-.01,.005, .05, .1, .2, 1.01))
 fdrcat = relevel(fdrcat, "(0.2,1.01]")
