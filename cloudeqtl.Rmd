@@ -337,6 +337,23 @@ sensitivity of eQTL enumerations across various dimensions,
 and users can add additional dimension through suitable
 programming.  The default behavior is illustrated first:
 ```{r co,echo=FALSE}
+#
+# defining here so that release version can be used
+#
+filtgen.maf.dist = function (maf.dist, 
+     validate.tab = function(tab) all(c("mindist", 
+    "MAF") %in% colnames(tab))) 
+{
+    stopifnot(is.atomic(maf.dist))
+    stopifnot(length(maf.dist) == 2)
+    maf = maf.dist[1]
+    dist = maf.dist[2]
+    function(tab) {
+        stopifnot(isTRUE(validate.tab(tab)))
+        tab[tab$mindist <= dist & tab$MAF >= maf, ]
+    }
+}
+
 eqsens_dt = function (dtab, filtgen = filtgen.maf.dist, by = c("pairs", "snps", 
     "probes")[1], targfdrs = c(0.05, 0.01, 0.005), parmslist = list(mafs = c(0.025, 
     0.05, 0.075, 0.1, 0.125), dists = c(1000, 5000, 10000, 25000, 
