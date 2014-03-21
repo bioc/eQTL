@@ -35,6 +35,7 @@ suppressMessages({  # include some warnings on symbol replacements
 if (!("GGdata" %in% installed.packages()[,1])) {
  source("http://www.bioconductor.org/biocLite.R")
  biocLite("GGdata")
+}
 if (!("SNPlocs.Hsapiens.dbSNP.20120608" %in% installed.packages()[,1])) {
  source("http://www.bioconductor.org/biocLite.R")
  biocLite("SNPlocs.Hsapiens.dbSNP.20120608")
