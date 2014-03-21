@@ -116,7 +116,7 @@ data on the HapMap CEU population.
       }
    estimates(cc) = FALSE
    set.seed(1234)
-   f1 <- cisScores( cc )
+   f1 <- All.cis( cc )  # devel: cisScores
 ```
 ```{r lkex,eval=FALSE}
 cc = new("CisConfig") # take a default configuration
