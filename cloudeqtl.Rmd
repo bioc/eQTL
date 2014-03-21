@@ -32,6 +32,10 @@ date()
 ```{r echo=FALSE,results="hide"}
 scoresCis = function(...){NULL}  # does commented unevald code get checked?
 suppressMessages({  # include some warnings on symbol replacements
+if (!("GGdata" %in% installed.packages()[,1])) {
+ source("http://www.bioconductor.org/biocLite.R")
+ biocLite("GGdata")
+}
 library(knitcitations)
 library(bibtex)
 allbib = read.bibtex("allbib.bib")
