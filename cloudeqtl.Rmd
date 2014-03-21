@@ -106,7 +106,18 @@ example of a sharply restricted search for cis eQTL on chr21, using
 data on the HapMap CEU population.  
 
 ```{r dolo,echo=FALSE}
-load("f1.rda")
+   cc = new("CisConfig")
+   chrnames(cc) = "21"
+   genome(cc) = "hg19"
+   lkp = try(library(parallel))
+   if (!inherits(lkp, "try-error")) {
+      nc = min(10, detectCores())
+      options(mc.cores=nc)
+      geneApply(cc) = mclapply
+      }
+   estimates(cc) = FALSE
+   set.seed(1234)
+   f1 <- cisScores( cc )
 ```
 ```{r lkex,eval=FALSE}
 cc = new("CisConfig") # take a default configuration
