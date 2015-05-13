@@ -53,9 +53,8 @@ library(parallel)
 library(foreach)
 library(biglm)
 library(rmeta)
-library(Cairo)
 library(SNPlocs.Hsapiens.dbSNP.20120608)
-load("partceu100k_dt.rda")
+if (!exists("partceu100k_dt")) load("partceu100k_dt.rda")
 })
 ```
 
@@ -457,8 +456,8 @@ library(parallel)
 dcdown = max(c(detectCores()-1,1))
 registerDoSEQ()
 if (.Platform$OS.type != "windows") {
- cl = makeForkCluster(dcdown)
- registerDoParallel(cl, cores=1) # nesting?
+ #cl = makeForkCluster(dcdown)
+ registerDoParallel(cores=dcdown) # nesting?
  }
 eq1 = eqsens_dt(partceu100k_dt)
 plotsens(eq1)
