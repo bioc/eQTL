@@ -453,7 +453,8 @@ load("partceu100k_dt.rda")
 library(foreach)  # basic function includes a %dopar%
 library(doParallel)
 library(parallel)
-dcdown = max(c(detectCores()-1,1))
+# dcdown = max(c(detectCores()-1,1)) ## use with lots of RAM
+dcdown = 2
 registerDoSEQ()
 if (.Platform$OS.type != "windows") {
  #cl = makeForkCluster(dcdown)
