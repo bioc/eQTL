@@ -51,7 +51,9 @@ library(scatterplot3d)
 library(lumi)
 library(parallel)
 library(foreach)
+library(doParallel)
 library(biglm)
+library(lumiHumanAll.db)
 library(rmeta)
 library(SNPlocs.Hsapiens.dbSNP.20120608)
 if (!exists("partceu100k_dt")) load("partceu100k_dt.rda")
@@ -119,8 +121,8 @@ data on the HapMap CEU population.
    chrnames(cc) = "21"
    lkp = try(library(parallel))
    if (!inherits(lkp, "try-error")) {
-      nc = min(10, detectCores())
-      options(mc.cores=nc)
+      nc = max(c(1,min(c(10, detectCores()-1))))
+      options(mc.cores=(nc-1))
       geneApply(cc) = mclapply
       }
    estimates(cc) = FALSE
@@ -454,7 +456,7 @@ library(foreach)  # basic function includes a %dopar%
 library(doParallel)
 library(parallel)
 # dcdown = max(c(detectCores()-1,1)) ## use with lots of RAM
-dcdown = 2
+dcdown = 1
 registerDoSEQ()
 if (.Platform$OS.type != "windows") {
  #cl = makeForkCluster(dcdown)
