@@ -462,7 +462,14 @@ if (.Platform$OS.type != "windows") {
  #cl = makeForkCluster(dcdown)
  registerDoParallel(cores=dcdown) # nesting?
  }
+```
+```{r doeq,eval=FALSE}
 eq1 = eqsens_dt(partceu100k_dt)
+```
+```{r nnn,echo=FALSE}
+load("sensSave.rda")
+eq1 = sensSave
+```
 plotsens(eq1)
 ```
 
