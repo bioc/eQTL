@@ -122,7 +122,7 @@ data on the HapMap CEU population.
    lkp = try(library(parallel))
    if (!inherits(lkp, "try-error")) {
       nc = max(c(1,min(c(10, detectCores()-1))))
-      options(mc.cores=(nc-1))
+      options(mc.cores=nc)
       geneApply(cc) = mclapply
       }
    estimates(cc) = FALSE
