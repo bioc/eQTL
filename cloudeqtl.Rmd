@@ -502,7 +502,7 @@ scoresCis("CPNE1", partceu100k_dt)
 
 <img src="demomod.png">
 
-<h3 id="stats-sec">Statistical characteristics of search results</h2>
+<h3 id="stats-sec">Statistical characteristics of search results</h3>
 
 In this section we consider how
 structural and genetic information
