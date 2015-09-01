@@ -1,12 +1,14 @@
+---
+vignette: >
+  %\VignetteIndexEntry{Cloud-enabled cis-eQTL searches with Bioconductor GGtools 5.x}
+  %\VignetteEngine{knitr::rmarkdown}
+---
+
+
 <script type="text/javascript"
   src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
 </script>
 
-
-<!--
-%\VignetteEngine{knitr::knitr}
-%\VignetteIndexEntry{Cloud-enabled cis-eQTL searches with Bioconductor GGtools 5.x}
--->
 
 <h1>Cloud-enabled cis-eQTL searches with GGtools 4.10+</h1>
 
