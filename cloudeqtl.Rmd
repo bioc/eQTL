@@ -45,6 +45,7 @@ if (!("SNPlocs.Hsapiens.dbSNP.20120608" %in% installed.packages()[,1])) {
 library(knitcitations)
 library(bibtex)
 allbib = read.bibtex("allbib.bib")
+library(S4Vectors)
 library(GGtools)
 library(GGdata)
 library(yri1kgv)
@@ -76,7 +77,8 @@ Key references in human applications include
 `r citet(allbib[["Shabalin:2012p4753"]])` addresses computational concerns.
 
 This document focuses on searches for eQTL <emph>in cis</emph>, so that
-DNA variants local to the gene assayed for expression are tested for association.
+DNA variants local to the gene assayed for expression are 
+tested for association.
 
 A typical report describes tuning of the search (including, for example,
 boundaries on minor allele
