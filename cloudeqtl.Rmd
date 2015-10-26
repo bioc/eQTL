@@ -45,6 +45,7 @@ if (!("SNPlocs.Hsapiens.dbSNP.20120608" %in% installed.packages()[,1])) {
 library(knitcitations)
 library(bibtex)
 allbib = read.bibtex("allbib.bib")
+library(GenomeInfoDb)
 library(S4Vectors)
 library(GGtools)
 library(GGdata)
