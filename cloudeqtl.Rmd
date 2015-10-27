@@ -38,9 +38,9 @@ if (!("GGdata" %in% installed.packages()[,1])) {
  source("http://www.bioconductor.org/biocLite.R")
  biocLite("GGdata")
 }
-if (!("SNPlocs.Hsapiens.dbSNP.20120608" %in% installed.packages()[,1])) {
+if (!("SNPlocs.Hsapiens.dbSNP144.GRCh37" %in% installed.packages()[,1])) {
  source("http://www.bioconductor.org/biocLite.R")
- biocLite("SNPlocs.Hsapiens.dbSNP.20120608")
+ biocLite("SNPlocs.Hsapiens.dbSNP144.GRCh37")
 }
 library(knitcitations)
 library(bibtex)
@@ -59,7 +59,7 @@ library(doParallel)
 library(biglm)
 library(lumiHumanAll.db)
 library(rmeta)
-library(SNPlocs.Hsapiens.dbSNP.20120608)
+library(SNPlocs.Hsapiens.dbSNP144.GRCh37)
 if (!exists("partceu100k_dt")) load("partceu100k_dt.rda")
 })
 ```
@@ -88,6 +88,9 @@ and other forms of confounding, scope of search in terms of distance from gene
 coding region), enumerates variants with evidence of association to expression
 variation in nearby genes, and then characterizes the biological roles of the
 discovered variants.
+
+N.B.  The gQTLstats package will supersede GGtools for scalable
+eQTL analysis; look for a revised workflow 2016Q1.
 
 <h2 id="objectives-sec">Objectives</h2>
 
@@ -326,7 +329,7 @@ The full set of arguments and defaults for ciseqByCluster is
 -   numPCtoFilter = 10,
 -   lowerMAF = .02,
 -   geneannopk = "lumiHumanAll.db",
--   snpannopk = "SNPlocs.Hsapiens.dbSNP.20120608",
+-   snpannopk = "SNPlocs.Hsapiens.dbSNP144.GRCh37"
 -   smchrpref = "chr"
 
 The GFF3 file that is generated along
