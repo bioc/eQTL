@@ -129,7 +129,7 @@ data on the HapMap CEU population.
    chrnames(cc) = "21"
    lkp = try(library(parallel))
    if (!inherits(lkp, "try-error")) {
-      nc = max(c(1,min(c(10, detectCores()-1))))
+      nc = 2 # max(c(1,min(c(10, detectCores()-1)))) # attempt to trim for workflow builder
       options(mc.cores=nc)
       geneApply(cc) = mclapply
       }
