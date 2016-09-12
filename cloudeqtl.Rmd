@@ -1,32 +1,16 @@
 ---
+title: Cloud-enabled cis-eQTL searches with Bioconductor GGtools 5.x
+output:
+  html_document:
+    toc: true
 vignette: >
   %\VignetteIndexEntry{Cloud-enabled cis-eQTL searches with Bioconductor GGtools 5.x}
   %\VignetteEngine{knitr::rmarkdown}
 ---
 
-
 <script type="text/javascript"
   src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
 </script>
-
-
-<h1>Cloud-enabled cis-eQTL searches with GGtools 4.10+</h1>
-
-* [Background](#background-sec)
-* [Objectives](#objectives-sec)
-    * [Basic reporting](#reporting-sec)
-    * [Visualization](#viz-sec)
-* [Raw materials: structuring expression, genotype, and sample data](#rawdata-sec)
-* [Cluster management with starcluster](#starcluster-sec)
-* [Programming the parallel search: various strategies](#parallel-sec)
-    * [High-level, socket-based cluster: ciseqByCluster](#hilev-sec)
-    * [BatchJobs-based approach](#batj-sec)
-* [Working with the results](#results-sec)
-    * [Overview QQ-plot](#ovplot-sec)
-    * [Sensitivity analysis of tuning the search](#sens-sec)
-    * [Visualizing results for a gene](#gviz-sec)
-    * [Statistical characteristics of search results](#stats-sec)
-
 
 ```{r echo=FALSE,results="hide"}
 date()
@@ -64,7 +48,7 @@ if (!exists("partceu100k_dt")) load("partceu100k_dt.rda")
 })
 ```
 
-<h2 id="background-sec">Background</h2>
+# Background
 
 Numerous studies have employed genome-wide measures of mRNA abundance (typically
 assayed using DNA microarrays, and more recently RNA-seq) in combination with
@@ -92,7 +76,7 @@ discovered variants.
 N.B.  The gQTLstats package will supersede GGtools for scalable
 eQTL analysis; look for a revised workflow 2016Q1.
 
-<h2 id="objectives-sec">Objectives</h2>
+# Objectives
 
 Suppose there are \\(N\\) independently sampled individuals
 with gene expression measures on \\(G\\) genes or probes.
@@ -118,7 +102,7 @@ or SNP minor allele frequency);
 various types of search key;
 - Support visualization of associations at various scales.
 
-<h3 id="reporting-sec">Basic execution/reporting structure</h3>
+## Basic execution/reporting structure
 
 The code in the example for the GGtools function All.cis() yields an
 example of a sharply restricted search for cis eQTL on chr21, using
@@ -157,7 +141,7 @@ the association scores achieved under permutation allows recomputation of
 plug-in FDR after combination or filtering.
 
 
-<h3 id="viz=sec">Visualization examples</h3>
+## Visualization examples
 
 Targeted visualization of association is supported with
 the plot_EvG function in GGBase.  To obtain the
@@ -193,9 +177,9 @@ visualized in conjunction with the transcript models.
 <img src="abhd12.png">
 
 
-<h2 id="rawdata-sec">Raw materials: structuring expression, genotype, and sample data</h2>
+# Raw materials: structuring expression, genotype, and sample data
 
-<h3 id="SnpMatrix-sec">SnpMatrix from snpStats for called and imputed genotypes</h3>
+## SnpMatrix from snpStats for called and imputed genotypes
 As of November 2013, a reasonably efficient representation of expression, sample and
 genotype data is defined using an R package containing
 
@@ -220,7 +204,7 @@ scatterplot3d(yy[,1], yy[,3], EB, xlab="Pr(A/A)", ylab="Pr(B/B)", zlab="mean num
 Note that the nucleotide codes are not carried in this representation.  Typically for
 a diallelic SNP, B denotes the alphabetically later nucleotide.
 
-<h3 id="smlSet-sec">smlSet for coordinating genotype, expression, and sample-level data</h3>
+## smlSet for coordinating genotype, expression, and sample-level data
 We can illustrate the basic operations with this overall structure, using data collected
 on Yoruban (YRI) HapMap cell
 lines.  Expression data were obtained at ArrayExpression
@@ -255,7 +239,7 @@ as( gt22[1:5,1:5], "character" )
 cs22 = col.summary(gt22)  # some information on genotypes
 cs22[1:10,]
 ```
-<h2 id="starcluster-sec">Cluster management with starcluster</h2>
+# Cluster management with starcluster
 
 This workflow is based on Amazon EC2 computation managed using the
 [MIT starcluster utilities](http://star.mit.edu/cluster/).  Configuration
@@ -270,9 +254,9 @@ used configuration variables
 In a complete run, for chromosome 1, a rescue run was required with a larger instance
 type (m3.2xlarge).
 
-<h2 id="parallel-sec">Programming the parallelized search: various approaches</h2>
+# Programming the parallelized search: various approaches
 
-<h3 id="hilev-sec"> High-level, socket-based cluster: ciseqByCluster </h3>
+## High-level, socket-based cluster: ciseqByCluster
 We will describe an essentially monolithic approach to using a cluster to
 search for eQTL in which evaluation of a single R function
 drives the search.  The master process will communicate with slaves via
@@ -337,9 +321,9 @@ with the data.table instance is useful for targeted queries, potentially from
 external applications.  The primary difficulty with using this 
 in R is the need to parse the optional data subfields of field 9.
 
-<h2 id="results-sec">Working with the results</h2>
+# Working with the results
 
-<h3 id="ovplot-sec">Overview QQ-plot</h3>
+## Overview QQ-plot
 
 It is customary to inspect QQ-plots for genome-wide
 association studies.  For eQTL searches, the number of
@@ -356,7 +340,7 @@ This gives an indication that the distribution
 of the vast majority of observed SNP-gene
 pair association statistics is consistent with the null model.
 
-<h3 id="sens-sec">Sensitivity analysis of tuning the search</h3>
+## Sensitivity analysis of tuning the search
 
 Because our data.table output retains information on association scores
 achieved after permuting expression against genotype, we can recompute
@@ -493,7 +477,7 @@ assumes a 2-vector of (MAF, dist) will be used to retain rows
 with MAF exceeding the input MAF, and dist no greater than the
 input mindist from SNP to gene.
 
-<h3 id="gviz-sec">Visualizing results for a gene</h3>
+## Visualizing results for a gene
 
 As of 1/20/2014 the call to scoresCis() can only be executed with
 R-devel and GGtools 4.11.28+.
@@ -510,7 +494,7 @@ scoresCis("CPNE1", partceu100k_dt)
 
 <img src="demomod.png">
 
-<h3 id="stats-sec">Statistical characteristics of search results</h3>
+## Statistical characteristics of search results
 
 In this section we consider how
 structural and genetic information
@@ -575,7 +559,7 @@ Standard errors in the presence of correlations among responses
 require further methodological development.
 
 
-<h2 id="bib-sec">References</h2>
+# References
 
 ```{r results='asis',echo=FALSE}
 bibliography() #style="markdown")
