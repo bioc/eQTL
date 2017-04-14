@@ -111,7 +111,7 @@ data on the HapMap CEU population.
 ```{r dolo,echo=FALSE}
    cc = new("CisConfig")
    chrnames(cc) = "21"
-   radius(cc) = 25000
+   radius(cc) = 25000L
    lkp = try(library(parallel))
    if (!inherits(lkp, "try-error")) {
       nc = 2 # max(c(1,min(c(10, detectCores()-1)))) # attempt to trim for workflow builder
