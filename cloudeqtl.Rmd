@@ -565,6 +565,6 @@ require further methodological development.
 bibliography() #style="markdown")
 ```
 
-```{r sess}
+```{r sess,eval=FALSE}
 sessionInfo()
 ```
