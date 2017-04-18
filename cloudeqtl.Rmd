@@ -558,6 +558,11 @@ forestplot(tmat, est, est-.01, est+.01, xlog=TRUE,
 Standard errors in the presence of correlations among responses
 require further methodological development.
 
+```{r cleanup, echo=FALSE}
+rm(list=ls())
+gc()
+```
+
 
 # References
 
@@ -565,6 +570,6 @@ require further methodological development.
 bibliography() #style="markdown")
 ```
 
-```{r sess,eval=FALSE}
+```{r sess}
 sessionInfo()
 ```
