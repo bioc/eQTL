@@ -16,9 +16,8 @@ date()
 ```{r echo=FALSE,results="hide"}
 scoresCis = function(...){NULL}  # does commented unevald code get checked?
 suppressMessages({  # include some warnings on symbol replacements
-library(bibtex)
-allbib = read.bibtex("allbib.bib")
 library(eQTL)
+allbib = read.bibtex("allbib.bib")
 })
 ```
 
