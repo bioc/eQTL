@@ -1,8 +1,8 @@
 Package: eQTL
 Title: Cloud-enabled cis-eQTL searches with Bioconductor GGtools 5.x
-Version: 1.0.0
+Version: 1.0.1
 Date: 2017-09-05
-Authors@R: c(person(role=c("aut","cre"), "Vincent", "Carey", email = "stvjc@channing.harvard.edu"))
+Authors@R: person(role=c("aut","cre"), "Vincent", "Carey", email = "stvjc@channing.harvard.edu")
 Description: This workflow focuses on searches for eQTL in cis, so that
     DNA variants local to the gene assayed for expression are
     tested for association.
@@ -17,7 +17,6 @@ Depends: R (>= 3.3.0),
     data.table,
     doParallel,
     foreach,
-    knitcitations,
     lumi,
     lumiHumanAll.db,
     parallel,
