@@ -1,6 +1,6 @@
 Package: eQTL
 Title: Cloud-enabled cis-eQTL searches with Bioconductor GGtools 5.x
-Version: 1.0.1
+Version: 1.0.2
 Date: 2017-09-05
 Authors@R: person(role=c("aut","cre"), "Vincent", "Carey", email = "stvjc@channing.harvard.edu")
 Description: This workflow focuses on searches for eQTL in cis, so that
@@ -23,7 +23,8 @@ Depends: R (>= 3.3.0),
     rmeta,
     scatterplot3d,
     snpStats,
-    yri1kgv
+    yri1kgv,
+    BiocStyle
 License: Artistic-2.0
 Encoding: UTF-8
 LazyData: true
