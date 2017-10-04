@@ -24,7 +24,8 @@ Depends: R (>= 3.3.0),
     scatterplot3d,
     snpStats,
     yri1kgv,
-    BiocStyle
+    BiocStyle,
+    knitcitations
 License: Artistic-2.0
 Encoding: UTF-8
 LazyData: true
