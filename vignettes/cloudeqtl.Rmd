@@ -16,8 +16,33 @@ date()
 ```{r echo=FALSE,results="hide"}
 scoresCis = function(...){NULL}  # does commented unevald code get checked?
 suppressMessages({  # include some warnings on symbol replacements
-library(eQTL)
+if (!("GGdata" %in% installed.packages()[,1])) {
+ source("http://www.bioconductor.org/biocLite.R")
+ biocLite("GGdata")
+}
+if (!("SNPlocs.Hsapiens.dbSNP144.GRCh37" %in% installed.packages()[,1])) {
+ source("http://www.bioconductor.org/biocLite.R")
+ biocLite("SNPlocs.Hsapiens.dbSNP144.GRCh37")
+}
+library(knitcitations)
+library(bibtex)
 allbib = read.bibtex("allbib.bib")
+library(GenomeInfoDb)
+library(S4Vectors)
+library(GGtools)
+library(GGdata)
+library(yri1kgv)
+library(snpStats)
+library(scatterplot3d)
+library(lumi)
+library(parallel)
+library(foreach)
+library(doParallel)
+library(biglm)
+library(lumiHumanAll.db)
+library(rmeta)
+library(SNPlocs.Hsapiens.dbSNP144.GRCh37)
+library(eQTL)
 })
 ```
 
@@ -129,6 +154,7 @@ concern of eQTL analyses to date
 
 ```{r demoy,fig=TRUE,fig.width=7,fig.height=4,echo=FALSE,results="hide"}
 suppressMessages({
+library(yri1kgv)
 if (!exists("c20")) c20 = getSS("yri1kgv", "chr20")
 par(mfrow=c(1,2))
 plot_EvG(probeId("o67h4JQSuEa02CJJIQ"), rsid("rs2259928"), c20,
@@ -168,6 +194,8 @@ The SnpMatrix instances make use of a byte code for (potentially) imputed genoty
 Each element of the code defines a point on the simplex displayed below, allowing
 a discrete but rich set of the key quantities of interest, the expected number of B alleles.
 ```{r bag,fig=TRUE,fig.width=4,fig.height=4,echo=FALSE}
+library(snpStats)
+library(scatterplot3d)
 tmp = as.raw(1:253)
 yy = g2post(tmp)
 EB = yy %*% c(0,1,2) 
@@ -183,6 +211,9 @@ lines.  Expression data were obtained at ArrayExpression
 E-MTAB-264 `r citep(allbib[["Stranger:2012p5427"]])`.
 
 ```{r bag2}
+library(GGtools)
+library(yri1kgv)
+library(lumiHumanAll.db)
 if (!exists("y22")) y22 = getSS("yri1kgv", "chr22")
 y22
 dim(exprs(y22))
@@ -191,6 +222,7 @@ fn = featureNames(y22)[1:5]
 The annotation of expression features can be explored in several directions.
 First, the probe names themselves encode the 50mers on the chip.
 ```{r getseq}
+library(lumi)
 id2seq(fn) # get the 50mer for each probe
 # and some annotation
 ```
@@ -251,9 +283,13 @@ The following script is available on the AMI noted above
 and will generate the partceu100k_dt data.table instance
 used for analysis below.
 ```{r showscript,eval=FALSE}
+library(parallel)
 newcl = makePSOCKcluster(c("master", paste0("node00", 1:3)))
+library(foreach)
+library(doParallel)
 registerDoParallel(cores=8)  # may want to keep at 5
 
+library(GGtools)
 ceuDemoRecov = try(ciseqByCluster( newcl, 
    chromsToRun=19:22, finaltag="partceu100k",
    outprefix="ceurun",
@@ -408,6 +444,9 @@ plotsens = function (eqsout, ylab = "count of eQTL at given FDR",
 
 ```{r dosens,fig=TRUE}
 data(partceu100k_dt)
+library(foreach)  # basic function includes a %dopar%
+library(doParallel)
+library(parallel)
 # dcdown = max(c(detectCores()-1,1)) ## use with lots of RAM
 dcdown = 1
 registerDoSEQ()
@@ -449,6 +488,7 @@ We will focus on the data.table output.  A basic objective
 is targeted visualization.  The scoresCis function
 helps with this.  We load the data.table instance first.
 ```{r coded,eval=FALSE}
+library(data.table)
 data("partceu100k_dt.rda")
 scoresCis("CPNE1", partceu100k_dt)
 ```
@@ -494,6 +534,7 @@ partceu100k_dt = cbind(partceu100k_dt, distcat, fdrcat, mafcat, approm)
 set.seed(1234)
 train = sample(1:nrow(partceu100k_dt), 
    size=floor(nrow(partceu100k_dt)/2), replace=FALSE)
+library(biglm)
 b1 = bigglm(isgwashit~distcat+fdrcat+mafcat+approm, fam=binomial(),
  data=partceu100k_dt[train,], maxit=30)
 ```
@@ -511,6 +552,7 @@ has some predictive utility.  We can visualize the coefficients:
 ```{r demomodco,fig=TRUE,fig.width=7,fig.height=4}
 tmat = matrix(rownames(summary(b1)$mat),nc=1)
 est = summary(b1)$mat[,1]
+library(rmeta)
 forestplot(tmat, est, est-.01, est+.01, xlog=TRUE,
   boxsize=.35, graphwidth=unit(3, "inches"),
   xticks=exp(seq(-4,2,2)))
