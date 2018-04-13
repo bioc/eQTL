@@ -24,6 +24,7 @@ Depends: R (>= 3.3.0),
     rmeta,
     scatterplot3d,
     snpStats,
+    grid,
     yri1kgv
 License: Artistic-2.0
 Encoding: UTF-8
