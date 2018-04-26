@@ -1,5 +1,8 @@
 ---
-author: "VJ Carey"
+author:
+  - name: VJ Carey
+    affiliation: Channing Division of Network Medicine, Department of Medicine, Brigham and Women's Hospital and Harvard Medical School, 181 Longwood Avenue, Boston, MA, 02115, USA
+    email: stvjc@channing.harvard.edu
 title: "Cloud-enabled cis-eQTL searches with Bioconductor GGtools 5.x"
 date: "3 June 2015"
 vignette: >
@@ -45,6 +48,14 @@ library(SNPlocs.Hsapiens.dbSNP144.GRCh37)
 library(eQTL)
 })
 ```
+
+
+**R version**: `r R.version.string`
+
+**Bioconductor version**: `r BiocInstaller::biocVersion()`
+
+**Package**: `r packageVersion("eQTL")`
+
 
 # Background
 
