@@ -19,13 +19,14 @@ date()
 ```{r echo=FALSE,results="hide"}
 scoresCis = function(...){NULL}  # does commented unevald code get checked?
 suppressMessages({  # include some warnings on symbol replacements
+if (!"BiocManager" %in% rownames(installed.packages()))
+     install.packages("BiocManager")
+
 if (!("GGdata" %in% installed.packages()[,1])) {
- source("http://www.bioconductor.org/biocLite.R")
- biocLite("GGdata")
+ install("GGdata")
 }
 if (!("SNPlocs.Hsapiens.dbSNP144.GRCh37" %in% installed.packages()[,1])) {
- source("http://www.bioconductor.org/biocLite.R")
- biocLite("SNPlocs.Hsapiens.dbSNP144.GRCh37")
+ install("SNPlocs.Hsapiens.dbSNP144.GRCh37")
 }
 library(knitcitations)
 library(bibtex)
@@ -52,7 +53,7 @@ library(eQTL)
 
 **R version**: `r R.version.string`
 
-**Bioconductor version**: `r BiocInstaller::biocVersion()`
+**Bioconductor version**: `r BiocManager::version()`
 
 **Package**: `r packageVersion("eQTL")`
 
